@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+  <style>
+    body {
+      margin: 0;
+    }
+
+    div {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 206px;
+      margin: auto;
+      padding: 20px;
+      border: 2px dashed hsl(0deg 0% 70%);
+      border-radius: 20px;
+    }
+
+    p {
+      margin-block-start: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="import">
+    <p>Drag and drop a CSV file to upload, or</p>
+    <input type="file" accept="text/csv">
+  </div>
+
+  <div id="loader" style="display: none">
+    <p>Uploading CSV...</p>
+  </div>
+
+  <script>
+    const importDiv = document.getElementById('import');
+    const loaderDiv = document.getElementById('loader');
+    const input = document.querySelector('input');
+
+    async function handleFile(file) {
+      importDiv.style.display = 'none';
+      loaderDiv.style.display = 'flex';
+
+      const csv = await file.text();
+      google.script.run
+        .withSuccessHandler(() => {
+          google.script.host.close();
+        })
+        .withFailureHandler(error => {
+          input.value = '';
+          importDiv.style.display = 'flex';
+          loaderDiv.style.display = 'none';
+          window.alert(`Upload failed! ${error.message}`);
+        })
+        .importSchwabData(csv);
+    }
+
+    // Required to prevent default behavior of downloading the dragged file
+    window.addEventListener('dragover', e => e.preventDefault());
+    window.addEventListener('drop', e => e.preventDefault());
+
+    importDiv.addEventListener('drop', e => handleFile(e.dataTransfer.files[0]));
+    input.addEventListener('input', e => handleFile(e.target.files[0]));
+  </script>
+</body>
+
+</html>
