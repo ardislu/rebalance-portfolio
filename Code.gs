@@ -4,7 +4,7 @@
  * Reference: https://developers.google.com/apps-script/guides/services/authorization
  */
 
- function onOpen() {
+function onOpen() {
   const ui = SpreadsheetApp.getUi();
 
   ui.createMenu('💲 Rebalance')
@@ -96,31 +96,39 @@ function calculateBuy() {
   const availableCash = portfolio.getRange(`C${cashRow}`).getValue();
   const totalPortfolioValue = portfolio.getRange(`E${cashRow + 1}`).getValue();
 
-  // Set up LinearOptimizationEngine
-  const engine = LinearOptimizationService.createEngine();
-  const cashConstraint = engine.addConstraint(availableCash - 5, availableCash); // Hardcoded max remaining cash of $5
-  const maxDeviation = 0.001; // Hardcoded max allowable deviation of 0.1% from each target allocation
-  const names = []; // To fetch the picks after solving
+  // Hardcoded max allowable deviations in increasing order
+  const maxDeviations = [0.0001, 0.00015, 0.0002, 0.00025, 0.0003, 0.00035, 0.0004, 0.00045, 0.0005, 0.00075, 0.001];
+  let solution;
 
-  for (const row of stocks) {
-    const name = row[0];
-    const price = row[2];
-    const fractional = row[6];
-    const optimal = row[8];
-    names.push([name]);
+  while (maxDeviations.length) {
+    const maxDeviation = maxDeviations.shift();
 
-    const deviation = totalPortfolioValue * maxDeviation / price;
-    const lowerBound = optimal - deviation;
-    const upperBound = optimal + deviation;
-    const type = fractional === '' ? LinearOptimizationService.VariableType.INTEGER : LinearOptimizationService.VariableType.CONTINUOUS;
-    const coefficient = -price; // Objective: minimize remaining cash
+    // Set up LinearOptimizationEngine
+    const engine = LinearOptimizationService.createEngine();
+    const cashConstraint = engine.addConstraint(availableCash - 5, availableCash); // Hardcoded max remaining cash of $5
 
-    engine.addVariable(name, lowerBound, upperBound, type, coefficient);
-    cashConstraint.setCoefficient(name, price);
+    for (const row of stocks) {
+      const name = row[0];
+      const price = row[2];
+      const fractional = row[6];
+      const optimal = row[8];
+
+      const deviation = totalPortfolioValue * maxDeviation / price;
+      const lowerBound = optimal - deviation;
+      const upperBound = optimal + deviation;
+      const type = fractional === '' ? LinearOptimizationService.VariableType.INTEGER : LinearOptimizationService.VariableType.CONTINUOUS;
+      const coefficient = -price; // Objective: minimize remaining cash
+
+      engine.addVariable(name, lowerBound, upperBound, type, coefficient);
+      cashConstraint.setCoefficient(name, price);
+    }
+
+    engine.setMinimization();
+    solution = engine.solve();
+    if (solution.isValid()) {
+      break;
+    }
   }
 
-  engine.setMinimization();
-  const solution = engine.solve();
-
-  portfolio.getRange(`T4:T${cashRow - 1}`).setValues(names.map(r => [solution.getVariableValue(r[0])]));
+  portfolio.getRange(`T4:T${cashRow - 1}`).setValues(stocks.map(r => [solution.getVariableValue(r[0])]));
 }
