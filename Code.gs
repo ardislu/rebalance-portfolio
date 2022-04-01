@@ -105,7 +105,7 @@ function calculateBuy() {
 
     // Set up LinearOptimizationEngine
     const engine = LinearOptimizationService.createEngine();
-    const cashConstraint = engine.addConstraint(availableCash - 5, availableCash); // Hardcoded max remaining cash of $5
+    const cashConstraint = engine.addConstraint(availableCash - 10, availableCash); // Hardcoded max remaining cash of $10
 
     for (const row of stocks) {
       const name = row[0];
