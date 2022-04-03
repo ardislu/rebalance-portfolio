@@ -44,18 +44,18 @@ function showImportDialog() {
 function importSchwabData(data) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
 
-  // Extract the existing portfolio's target % values
+  // Extract the existing portfolio's target % and fractional values
   const oldPortfolio = spreadsheet.getSheetByName('Portfolio');
   const oldCashRow = oldPortfolio.createTextFinder('Cash').findNext().getRow(); // Assuming 'Cash' does not appear anywhere else on the portfolio
-  const oldStocks = oldPortfolio.getRange(`B4:G${oldCashRow}`).getValues(); // Hardcoded range assuming a fixed template
-  const oldTargets = new Map();
-  oldStocks.forEach(r => oldTargets.set(r[0], r[5])); // Hardcoded Symbol and Target % indices (0 and 5)
+  const oldStocks = oldPortfolio.getRange(`B4:H${oldCashRow}`).getValues(); // Hardcoded range assuming a fixed template
+  const oldValues = new Map();
+  oldStocks.forEach(r => oldValues.set(r[0], [r[5], r[6]])); // Hardcoded Symbol, Target %, and Fractional indices (0, 5, and 6)
 
   // Set up the new portfolio sheet and new values
   const template = spreadsheet.getSheetByName('Template'); // Hidden sheet (!!!) MAXIMUM 100 STOCKS (!!!)
   const newPortfolio = template.copyTo(spreadsheet); // Will create a new sheet. Necessary to duplicate formatting.
   const newStocks = []; // Will replace columns B and C
-  const newTargets = []; // Will replace column G
+  const newValues = []; // Will replace columns G and H
 
   // Remove extraneous rows from the Schwab export
   const rows = data.split('\n');
@@ -67,18 +67,18 @@ function importSchwabData(data) {
   for (const row of csv) {
     if (row[0] === 'Cash & Cash Investments') { // Schwab export treats the cash row uniquely
       newStocks.push(['Cash', row[6]]);
-      newTargets.push([oldTargets.get('Cash')]); // Assumes Cash target was defined in oldPortfolio
+      newValues.push(oldValues.get('Cash')); // Assumes Cash target was defined in oldPortfolio
     }
     else {
       newStocks.push([row[0], row[2]]);
-      newTargets.push([oldTargets.has(row[0]) ? oldTargets.get(row[0]) : 0]);
+      newValues.push(oldValues.has(row[0]) ? oldValues.get(row[0]) : [0, '']);
     }
   }
 
   // Set new portfolio values and delete excess rows (!!!) MAXIMUM 100 STOCKS (!!!)
   newPortfolio.deleteRows(4, 100 - csv.length + 1); // MUST delete before inserting
   newPortfolio.getRange(`B4:C${4 + csv.length - 1}`).setValues(newStocks);
-  newPortfolio.getRange(`G4:G${4 + csv.length - 1}`).setValues(newTargets);
+  newPortfolio.getRange(`G4:H${4 + csv.length - 1}`).setValues(newValues);
 
   // Replace oldPortfolio with newPortfolio
   newPortfolio.showSheet();
