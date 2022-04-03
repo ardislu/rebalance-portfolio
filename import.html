@@ -37,6 +37,13 @@
   </div>
 
   <script>
+    const stagePromise = new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(data => resolve(data))
+        .withFailureHandler(error => reject(error))
+        .prepareImport();
+    });
+
     const importDiv = document.getElementById('import');
     const loaderDiv = document.getElementById('loader');
     const input = document.querySelector('input');
@@ -45,7 +52,7 @@
       importDiv.style.display = 'none';
       loaderDiv.style.display = 'flex';
 
-      const csv = await file.text();
+      const [csv, oldValues] = await Promise.all([file.text(), stagePromise]);
       google.script.run
         .withSuccessHandler(() => {
           google.script.host.close();
@@ -56,7 +63,7 @@
           loaderDiv.style.display = 'none';
           window.alert(`Upload failed! ${error.message}`);
         })
-        .importSchwabData(csv);
+        .importSchwabData(csv, oldValues);
     }
 
     // Required to prevent default behavior of downloading the dragged file

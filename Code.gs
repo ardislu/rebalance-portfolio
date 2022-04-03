@@ -41,24 +41,42 @@ function showImportDialog() {
 }
 
 // This function is called client-side from the import dialog
-function importSchwabData(data) {
+// Intended to be called immediately when the import dialog is opened to handle all logic which can occur in the background as the user is selecting a file
+function prepareImport() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Get Stage sheet or initialize it if it doesn't exist
+  let newPortfolio = spreadsheet.getSheetByName('Stage');
+  if (newPortfolio === null) {
+    const template = spreadsheet.getSheetByName('Template'); // Hidden sheet (!!!) MAXIMUM 100 STOCKS (!!!)
+    newPortfolio = template.copyTo(spreadsheet); // Will create a new sheet. Necessary to duplicate formatting.
+    newPortfolio.setName('Stage');
+  }
 
   // Extract the existing portfolio's target % and fractional values
   const oldPortfolio = spreadsheet.getSheetByName('Portfolio');
   const oldCashRow = oldPortfolio.createTextFinder('Cash').findNext().getRow(); // Assuming 'Cash' does not appear anywhere else on the portfolio
   const oldStocks = oldPortfolio.getRange(`B4:H${oldCashRow}`).getValues(); // Hardcoded range assuming a fixed template
-  const oldValues = new Map();
-  oldStocks.forEach(r => oldValues.set(r[0], [r[5], r[6]])); // Hardcoded Symbol, Target %, and Fractional indices (0, 5, and 6)
+  const oldValues = {};
+  oldStocks.forEach(r => oldValues[r[0]] = [r[5], r[6]]); // Hardcoded Symbol, Target %, and Fractional indices (0, 5, and 6)
+
+  return JSON.stringify(oldValues);
+}
+
+// This function is called client-side from the import dialog
+function importSchwabData(file, oldValues) {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+
+  const oldPortfolio = spreadsheet.getSheetByName('Portfolio');
+  oldValues = new Map(Object.entries(JSON.parse(oldValues)));
 
   // Set up the new portfolio sheet and new values
-  const template = spreadsheet.getSheetByName('Template'); // Hidden sheet (!!!) MAXIMUM 100 STOCKS (!!!)
-  const newPortfolio = template.copyTo(spreadsheet); // Will create a new sheet. Necessary to duplicate formatting.
+  const newPortfolio = spreadsheet.getSheetByName('Stage'); // Assumes prepareImport() has been called and awaited client-side
   const newStocks = []; // Will replace columns B and C
   const newValues = []; // Will replace columns G and H
 
   // Remove extraneous rows from the Schwab export
-  const rows = data.split('\n');
+  const rows = file.split('\n');
   rows.splice(0, 3); // First 3 rows are headers
   rows.splice(-2, 2); // Last 2 rows are summary rows
 
