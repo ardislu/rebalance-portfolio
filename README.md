@@ -2,7 +2,7 @@
 
 Google Apps Script (GAS) code to calculate optimal purchases to re-balance a portfolio.
 
-Demo (copy the Google Sheet): https://docs.google.com/spreadsheets/d/1ntywtnbHjnhOAXBWm3uxT4xhSpne-s9qYo59h99WP40/edit
+[Click here to create a copy of the demo Google Sheet (the required GAS code will also be copied)](https://docs.google.com/spreadsheets/d/1ntywtnbHjnhOAXBWm3uxT4xhSpne-s9qYo59h99WP40/copy).
 
 Uses [LinearOptimizationService](https://developers.google.com/apps-script/reference/optimization/linear-optimization-service) for the calculation:
 
