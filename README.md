@@ -61,6 +61,20 @@ For shares that must be bought or sold in whole numbers, you could simply round 
 
 The GAS code will use the constraints (i.e., remaining cash must be greater than 0 and the sum of deviations from target must be minimized) to set the optimal orders.
 
+## "This app is blocked"
+
+If your Google account is configured to block "less secured apps" ([Less secure app access](https://myaccount.google.com/lesssecureapps)) then you may see a warning like this when running the GAS code:
+
+![Google sign-on warning showing the app is blocked.](./.github/blocked.png)
+
+To dismiss the warning, open the Sheet and go to `Extensions > Apps Script > Project Settings`, then click the `Change project` button under the `Google Cloud Platform (GCP) Project` section. Then:
+1. Create a new GCP project or select an existing GCP project.
+2. Configure the OAuth consent screen.
+3. Add yourself as a test user to the project.
+4. Set the GCP project number for this GAS app.
+
+After following these steps, you will be able to use the app.
+
 ## rebalance.vba
 
 This is a legacy Excel VBA script I wrote in 2016, to be used for reference only. This code uses the Excel Solver add-in to calculate the optimal purchase, which is slightly better than Google Sheets (Solver uses a non-linear algorithm which allows multiple objectives).
